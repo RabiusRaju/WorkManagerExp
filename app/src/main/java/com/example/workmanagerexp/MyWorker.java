@@ -21,30 +21,26 @@ public class MyWorker extends Worker {
     @Override
     public Result doWork() {
 
-        Data retrievedData =  getInputData();
-        String  desc = retrievedData.getString("input_data");
+        Data retrievedData = getInputData();
+        int val = retrievedData.getInt("input_data_1st_work",5);
 
-        displayNotification("Demo Task", desc);
+        int sum = 0;
 
-        Data outputData = new Data.Builder().putString("output_data", "This is an Output Data").build();
+        for(int i = 0; i< val; i++){
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            sum = sum + i;
+        }
+
+        Data outputData = new Data.Builder().putInt("output_data_1st_work",sum).build();
 
         return Result.success(outputData);
     }
 
-    private void displayNotification(String task, String desc){
 
-        NotificationManager manager = (NotificationManager) getApplicationContext().getSystemService(Context.NOTIFICATION_SERVICE);
-
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O){
-            NotificationChannel channel = new NotificationChannel("raju","raju",NotificationManager.IMPORTANCE_DEFAULT);
-            manager.createNotificationChannel(channel);
-        }
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(),"raju")
-                .setContentTitle(task)
-                .setContentText (desc)
-                .setSmallIcon(R.mipmap.ic_launcher);
-
-        manager.notify(1, builder.build());
-
-    }
 }

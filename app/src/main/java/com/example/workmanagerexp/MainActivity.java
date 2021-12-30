@@ -1,22 +1,18 @@
 package com.example.workmanagerexp;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.Observer;
-import androidx.work.Constraints;
-import androidx.work.Data;
-import androidx.work.NetworkType;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkInfo;
-import androidx.work.WorkManager;
-
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import java.util.concurrent.TimeUnit;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,85 +29,44 @@ public class MainActivity extends AppCompatActivity {
         btnStart = (Button) findViewById(R.id.btnStart);
         tvStatus = (TextView) findViewById(R.id.tvStatus);
 
+        Data inputData = new Data.Builder().putInt("input_data_1st_work",10).build();
 
-
-        /*
-        * Sending Input/Output Data
-        * */
-
-        Data inputData = new Data.Builder().putString("input_data", "This is Input Data").build();
-
-
-        /*
-        * Constraints Concept
-        * */
-        Constraints constraints = new Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.UNMETERED)
-                .build();
-
-        /*
-        * OneTimeWorkRequest
-        * */
-
-
-        OneTimeWorkRequest request = new OneTimeWorkRequest.Builder(MyWorker.class)
-                .setConstraints(constraints)
+        final OneTimeWorkRequest request1 = new OneTimeWorkRequest.Builder(MyWorker.class)
                 .setInputData(inputData)
+                .addTag("MyWork")
                 .build();
 
-        btnStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                WorkManager.getInstance(MainActivity.this).enqueue(request);
-            }
-        });
+        final OneTimeWorkRequest request2 = new OneTimeWorkRequest.Builder(MyWorker2.class)
+                .addTag("MyWork")
+                .build();
 
-        WorkManager.getInstance(this).getWorkInfoByIdLiveData(request.getId())
-            .observe(this, new Observer<WorkInfo>() {
-                @Override
-                public void onChanged(WorkInfo workInfo) {
-                    String status = workInfo.getState().name();
-                    tvStatus.append(status + "\n");
+        btnStart.setOnClickListener(v -> WorkManager.getInstance(MainActivity.this)
+                .beginWith(request1)
+                .then(request2)
+                .enqueue());
 
-                    if(workInfo !=null){
-                        if(workInfo.getState().isFinished()){
-                            Data retrievedData = workInfo.getOutputData();
-                            String outputData = retrievedData.getString("output_data");
+        WorkManager.getInstance(this).getWorkInfosByTagLiveData("MyWork")
+                .observe(this, new Observer<List<WorkInfo>>() {
+                    @Override
+                    public void onChanged(List<WorkInfo> workInfos) {
+                        if(workInfos.size() !=0){
+                            for(int i = 0; i< workInfos.size(); i++){
+                                String status = workInfos.get(i).getState().name();
+                                tvStatus.append(status + "\n");
 
-                            tvStatus.append(outputData + "\n");
+                                if(workInfos.get(i).getState().isFinished()){
+
+                                    Data retrievedData = workInfos.get(i).getOutputData();
+                                    int outputData = retrievedData.getInt("output_data_2nd_work",0);
+                                    if(outputData >0){
+                                        tvStatus.append(outputData + "\n");
+                                    }
+
+                                }
+                            }
                         }
                     }
-                }
         });
-
-
-        /*
-        * PeriodicWorkRequest
-        * */
-
-        /*final PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(MyWorker.class,2, TimeUnit.MINUTES)
-                .setConstraints(constraints)
-                .build();
-
-        btnStart.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                WorkManager.getInstance(MainActivity.this).enqueue(request);
-            }
-        });
-
-        WorkManager.getInstance(this).getWorkInfoByIdLiveData(request.getId())
-            .observe(this, new Observer<WorkInfo>() {
-                @Override
-                public void onChanged(WorkInfo workInfo) {
-                    String status = workInfo.getState().name();
-
-                    tvStatus.append(status + "\n");
-
-
-                }
-        });*/
-
 
     }
 }
